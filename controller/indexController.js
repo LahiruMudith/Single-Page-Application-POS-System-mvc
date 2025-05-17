@@ -1,19 +1,316 @@
-import {customer_db, item_db, order_db} from "../db/db.js";
 import CustomerModel from "../model/customerModel.js";
+import {customer_db, item_db, order_db} from "../db/db.js";
 import ItemModel from "../model/itemModel.js";
 import OrderModel from "../model/OrderModel.js";
 
-let customer = new CustomerModel('C001', 'Lahiru', 'Muditha', '0777777777', 'Colombo');
-customer_db.push(customer);
 
-let item = new ItemModel('I001', 'Laptop', 100, 10);
-item_db.push(item);
-let item1 = new ItemModel('I002', 'Phone', 100, 20);
-item_db.push(item1);
-let item2 = new ItemModel('I003', 'Printer', 100, 30);
-item_db.push(item2);
+$("#customer-btn").on('click', function (event) {
+    $('#place-order-section').css('display', "none");
+    $('#item-section').css('display', "none");
+    $('#customer-section').css('display', "block");
+    $('#customer-section').addClass("active");
+});
+$("#item-btn").on('click', function (event) {
+    $('#place-order-section').css('display', "none");
+    $('#customer-section').css('display', "none");
+    $('#item-section').css('display', "block");
+});
+$("#place-order-btn").on('click', function (event) {
+    $('#customer-section').css('display', "none");
+    $('#item-section').css('display', "none");
+    $('#place-order-section').css('display', "block");
+});
+
+//////////////////////Customer//////////////////////////////
+function clearCustomerFields(){
+    $('#customerId').val("");
+    $('#firstName').val("");
+    $('#lastName').val("");
+    $('#phoneNumber').val("");
+    $('#address').val("");
+    $('#btnRegister').text('Register');
+}
+$('#btnRegister').on('click', function (event) {
+    event.preventDefault(); // Prevent form from submitting and refreshing
+    let btnText = $('#btnRegister').text();
+
+    let customerId = $('#customerId').val();
+    let firstName = $('#firstName').val();
+    let lastName = $('#lastName').val();
+    let phoneNumber = $('#phoneNumber').val();
+    let address = $('#address').val();
+
+    //Customer Register
+    if (btnText === 'Register'){
+        let isNewCustomer = true;
+
+        if (customerId === "" || firstName === "" || lastName === "" || phoneNumber === "" || address === "") {
+            Swal.fire({
+                title: "Enter data to all fields",
+                icon: "error"
+            });
+            return;
+        }
+        customer_db.forEach(function (customer){
+            if (customer.cId === $('#customerId').val()){
+                Swal.fire({
+                    title: "Customer Already exists",
+                    text: "Please enter a different ID",
+                    icon: "error"
+                });
+                isNewCustomer = false;
+            }
+        });
+        if (!isNewCustomer){
+            return;
+        }
+
+        let customer = new CustomerModel(customerId, firstName, lastName, phoneNumber, address);
+        customer_db.push(customer);
+        Swal.fire({
+            title: "Customer Saved",
+            icon: "success",
+            timer: 1500,
+            showConfirmButton: false
+        });
+    }
+
+    //Customer Update
+    if (btnText === 'Update'){
+
+        if (customerId === "" || firstName === "" || lastName === "" || phoneNumber === "" || address === "") {
+            Swal.fire({
+                title: "Enter data to all fields",
+                icon: "error"
+            });
+            return;
+        }
+
+        customer_db.forEach(function (customer){
+            if (customer.cId === customerId){
+                customer.firstName = firstName;
+                customer.lastName = lastName;
+                customer.phoneNumber = phoneNumber;
+                customer.address = address;
+            }
+        });
+        // customer_db.push(customer);
+        // Swal.fire({
+        //     title: "Customer Saved",
+        //     icon: "success",
+        //     timer: 1500,
+        //     showConfirmButton: false
+        // });
+    }
+
+    loadCustomers()
+    clearCustomerFields()
+});
+
+function loadCustomers(){
+    $('#customer-table-body').empty();
+
+    customer_db.map(function (customer){
+        let customerId = customer.cId
+        let firstName = customer.firstName
+        let lastName = customer.lastName
+        let phoneNumber = customer.phoneNumber
+        let address = customer.address
+
+        let customer_data = `<tr>
+                <td>${customerId}</td>
+                <td>${firstName}</td>
+                <td>${lastName}</td>
+                <td>${phoneNumber}</td>
+                <td>${address}</td>
+                <td><button type="button" class="btn btn-danger" id="btn-delete">Delete</button></td>
+            </tr>`
+        $('#customer-table-body').append(customer_data);
+    })
+}
+
+$('#customer-table-body').on('click', 'tr', function (event){
+    if ($(event.target).closest('#btn-delete').length > 0) {
+        return; // skip row click if delete button was clicked
+    }
+
+    const customer_index = $(this).index()
+    let selected_customer = customer_db[customer_index];
+
+    $('#customerId').val(selected_customer.cId);
+    $('#firstName').val(selected_customer.firstName);
+    $('#lastName').val(selected_customer.lastName);
+    $('#phoneNumber').val(selected_customer.phoneNumber);
+    $('#address').val(selected_customer.address);
+    $('#btnRegister').text('Update');
+    $('#customerId').prop('disabled', true);
+});
+
+$('#customer-table-body').on('click', '#btn-delete', function (event){
+    Swal.fire({
+        title: "Do you want to Delete this Customer?",
+        showCancelButton: true,
+        confirmButtonText: "Yes",
+    }).then((result) => {
+        /* Read more about isConfirmed, isDenied below */
+        if (result.isConfirmed) {
+            const customer_index = $(this).index();
+            customer_db.splice(customer_index, 1);
+            loadCustomers();
+            Swal.fire({
+                title: "Deleted",
+                icon: "success",
+                timer: 1000,
+                showConfirmButton: false
+            });
+        }
+    });
+});
+
+//////////////////////Item//////////////////////////////
+function clearItemFields(){
+    $('#itemId').val("");
+    $('#itemName').val("");
+    $('#qty').val("");
+    $('#price').val("");
+    $('#btnAdd').text('Add');
+}
+$('#btnAdd').on('click', function (event) {
+    event.preventDefault(); // Prevent form from submitting and refreshing
+    console.log('btnAdd clicked');
+    let btnText = $('#btnAdd').text();
+
+    let itemId = $('#itemId').val();
+    let itemName = $('#itemName').val();
+    let qty = $('#qty').val();
+    let price = $('#price').val();
+
+    //Customer Register
+    if (btnText === 'Add'){
+        let isNewItem = true;
+
+        if (itemId === "" || itemName === "" || qty === "" || price === "") {
+            Swal.fire({
+                title: "Enter data to all fields",
+                icon: "error"
+            });
+            return;
+        }
+        item_db.forEach(function (item){
+            if (item.iId === itemId){
+                Swal.fire({
+                    title: "Item Already exists",
+                    text: "Please enter a different ID",
+                    icon: "error"
+                });
+                isNewItem = false;
+            }
+        });
+        if (!isNewItem){
+            return;
+        }
+
+        let item = new ItemModel(itemId, itemName, qty, price);
+        item_db.push(item);
+        Swal.fire({
+            title: "Item Saved",
+            icon: "success",
+            timer: 1500,
+            showConfirmButton: false
+        });
+    }
+
+    //Customer Update
+    if (btnText === 'Update'){
+
+        if (itemId === "" || itemName === "" || qty === "" || price === "") {
+            Swal.fire({
+                title: "Enter data to all fields",
+                icon: "error"
+            });
+            return;
+        }
+
+        item_db.forEach(function (item){
+            if (item.iId === itemId){
+                item.itemName = itemName;
+                item.qty = qty;
+                item.price= price;
+            }
+        });
+        // customer_db.push(customer);
+        // Swal.fire({
+        //     title: "Customer Saved",
+        //     icon: "success",
+        //     timer: 1500,
+        //     showConfirmButton: false
+        // });
+    }
+
+    loadItems()
+    clearItemFields()
+});
+
+function loadItems(){
+    $('#item-table-body').empty();
+
+    item_db.map(function (item){
+        let itemId = item.iId;
+        let itemName = item.itemName;
+        let qty = item.qty;
+        let price = item.price;
+
+        let itemData = `<tr>
+                <td>${itemId}</td>
+                <td>${itemName}</td>
+                <td>${qty}</td>
+                <td>${price}</td>
+                <td><button type="button" class="btn btn-danger" id="btn-delete">Delete</button></td>
+            </tr>`
+        $('#item-table-body').append(itemData);
+    })
+}
+
+$('#item-table-body').on('click', 'tr', function (event){
+    if ($(event.target).closest('#btn-delete').length > 0) {
+        return; // skip row click if delete button was clicked
+    }
+
+    const item_index = $(this).index()
+    let selected_item = item_db[item_index];
+
+    $('#itemId').val(selected_item.iId);
+    $('#itemName').val(selected_item.itemName);
+    $('#qty').val(selected_item.qty);
+    $('#price').val(selected_item.price);
+    $('#btnAdd').text('Update');
+    $('#itemId').prop('disabled', true);
 
 
+});
+
+$('#item-table-body').on('click', '#btn-delete', function (event){
+    Swal.fire({
+        title: "Do you want to Delete this Item?",
+        showCancelButton: true,
+        confirmButtonText: "Yes",
+    }).then((result) => {
+        /* Read more about isConfirmed, isDenied below */
+        if (result.isConfirmed) {
+            const item_index = $(this).index();
+            item_db.splice(item_index, 1);
+            loadItems();
+            Swal.fire({
+                title: "Deleted",
+                icon: "success",
+                timer: 1000,
+                showConfirmButton: false
+            });
+        }
+    });
+});
+
+//////////////////////Place Order//////////////////////////////
 var cart = [];
 var total = 0;
 $("#discount").val(0);
@@ -28,16 +325,18 @@ $("#discount").val(0);
 
 $('#btnSearchCustomer').on('click', function(event) {
     event.preventDefault();
-    let cudtomerId = $('#customerId').val();
+    console.log(customer_db);
+    let cudtomerId = $('.customerId').val();
     let isNewCustomer = true;
     customer_db.forEach(function (customer){
         if (customer.cId === cudtomerId){
             isNewCustomer = false;
-            $('#table-body').empty();
-            $('#firstName').val(customer.firstName);
-            $('#lastName').val(customer.lastName);
-            $('#phoneNumber').val(customer.phoneNumber);
-            $('#address').val(customer.address);
+            console.log(isNewCustomer)
+            $('#place-order-table-body').empty();
+            $('.firstName').val(customer.firstName);
+            $('.lastName').val(customer.lastName);
+            $('.phoneNumber').val(customer.phoneNumber);
+            $('.address').val(customer.address);
         }
     })
     if (isNewCustomer){
@@ -54,7 +353,7 @@ $('#btnSearchCustomer').on('click', function(event) {
 
 $('#btnSearchItem').on('click', function(event) {
     event.preventDefault();
-    let itemId = $('#itemId').val();
+    let itemId = $('.itemId').val();
 
     item_db.forEach(function (item){
         if (item.iId === itemId){
@@ -67,9 +366,9 @@ $('#btnSearchItem').on('click', function(event) {
                 return;
             }
 
-            $('#itemName').val(item.itemName);
-            $('#qty').val(item.qty);
-            $('#price').val(item.price);
+            $('.itemName').val(item.itemName);
+            $('.qty').val(item.qty);
+            $('.price').val(item.price);
         }
     })
 });
@@ -85,7 +384,7 @@ $('#btnAddToCart').on('click', function (event){
     //     });
     //     return;
     // }
-    if ($('#itemName').val() === "") {
+    if ($('.itemName').val() === "") {
         Swal.fire({
             title: "Please select a item",
             icon: "error",
@@ -93,7 +392,7 @@ $('#btnAddToCart').on('click', function (event){
         });
         return;
     }
-    if ($('#orderQty').val() === "") {
+    if ($('.orderQty').val() === "") {
         Swal.fire({
             title: "Please fill the order quantity",
             icon: "error",
@@ -102,24 +401,24 @@ $('#btnAddToCart').on('click', function (event){
         return;
     }
 
-    let itemId = $('#itemId').val();
-    let itemName = $('#itemName').val();
-    let qty = $('#qty').val();
-    let price = $('#price').val();
-    let orderQty = $('#orderQty').val();
+    let itemId = $('.itemId').val();
+    let itemName = $('.itemName').val();
+    let qty = $('.qty').val();
+    let price = $('.price').val();
+    let orderQty = $('.orderQty').val();
     let totalPrice = Number(price) * Number(orderQty);
 
     let isValidItem = true;
-    item_db.forEach(function (item){
-        if (item.iId === itemId){
-            if (orderQty > item.qty ){
+    item_db.forEach(function (item) {
+        if (item.iId === itemId) {
+            if (Number(orderQty) > Number(item.qty)) {
                 Swal.fire({
                     title: "Not enough stock",
                     icon: "error",
                     timer: 1000
                 });
                 isValidItem = false;
-            }else {
+            } else {
                 item.qty = Number(item.qty) - Number(orderQty);
             }
         }
@@ -140,8 +439,11 @@ $('#btnAddToCart').on('click', function (event){
     if (isNewItem){
         cart.push(item);
     }
+    loadCart();
+});
 
-    $('#table-body').empty();
+function loadCart(){
+    $('#place-order-table-body').empty();
     total = 0;
     cart.forEach(function (cart){
         let itemData = `<tr class="row">
@@ -150,21 +452,19 @@ $('#btnAddToCart').on('click', function (event){
                             <td class="col">${cart.orderQty}</td>
                             <td class="col">${cart.price}</td>
                             <td class="col">${cart.totalPrice}</td>
-                            <td class="col"><button type="button" class="btn btn-danger">Delete</button></td>
+                            <td class="col"><button type="button" class="btn btn-danger" id="delete-btn">Delete</button></td>
                         </tr>`
 
-        $('#table-body').append(itemData);
+        $('#place-order-table-body').append(itemData);
 
         total = Number(total) + ((Number(cart.price) * Number(cart.orderQty)));
     });
     $('#lblTotal').text(`TOTAL : ${total} /=`);
-    console.log(total)
-});
-
+}
 $('#btn-place-order').on('click', function (event){
     event.preventDefault();
 
-    if ($('#firstName').val() === "") {
+    if ($('.firstName').val() === "") {
         Swal.fire({
             title: "Please select a customer",
             icon: "error",
@@ -188,9 +488,9 @@ $('#btn-place-order').on('click', function (event){
         });
         return;
     }
-    let customerId = $('#customerId').val();
-    let customerName = $('#firstName').val() + " " + $('#lastName').val();
-    let phoneNumber = $('#phoneNumber').val();
+    let customerId = $('.customerId').val();
+    let customerName = $('.firstName').val() + " " + $('.lastName').val();
+    let phoneNumber = $('.phoneNumber').val();
     let orderDate = new Date().toLocaleDateString();
     let orderId = $('#orderId').val();
     let cash = $('#cash').val();
@@ -236,5 +536,35 @@ $("#cash").on('keyup', function (event){
     if (total <= Number(cash)) {
         $("#balance").val(Number(cash) - (total - discountPrice));
     }
+});
+$('#place-order-table-body').on('click', '#delete-btn', function (event){
+    Swal.fire({
+        title: "Do you want to Delete this Item?",
+        showCancelButton: true,
+        confirmButtonText: "Yes",
+    }).then((result) => {
+        /* Read more about isConfirmed, isDenied below */
+        if (result.isConfirmed) {
+            const item_index = $(this).index();
+            let item = cart[item_index];
+            cart.splice(item_index, 1);
+            item_db.forEach(function (item){
+                if (item.iId === item.itemId){
+                    item.qty = Number(item.qty) + Number(item.orderQty);
+                }
+            });
+            loadItems();
+            Swal.fire({
+                title: "Deleted",
+                icon: "success",
+                timer: 1000,
+                showConfirmButton: false
+            });
+        }
+        loadCart();
+    });
 
 });
+
+
+
